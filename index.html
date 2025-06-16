@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>জাভাস্ক্রিপ্ট শিখি, খেলতে খেলতে!</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2c7a7b;
+            --secondary-color: #38b2ac;
+            --light-bg: #f0f7f4;
+            --white-bg: #ffffff;
+            --text-dark: #2d3748;
+            --text-light: #333;
+            --locked-bg: #e2e8f0;
+            --locked-border: #a0aec0;
+            --disabled-bg: #cbd5e0;
+        }
+
+        body {
+            font-family: 'Tiro Bangla', serif;
+            background-color: var(--light-bg);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--white-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            text-align: center;
+            margin: 40px auto;
+        }
+
+        h1 { color: var(--primary-color); font-size: 2.5em; margin-bottom: 10px; }
+        
+        #level-tracker {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        /* নতুন: রেসপন্সিভ লেআউটের জন্য প্রধান কন্টেইনার */
+        .main-layout {
+            display: flex;
+            flex-direction: column; /* মোবাইলের জন্য ডিফল্ট */
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .main-content { width: 100%; }
+        .sidebar-content { width: 100%; }
+
+        /* নতুন: সাইডবারের স্টাইল */
+        .sidebar-content h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        .locked-levels-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .locked-list-item {
+            background-color: var(--locked-bg);
+            border: 1px solid var(--locked-border);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 1.1em;
+            color: #4a5568;
+        }
+
+        /* --- বড় স্ক্রিনের জন্য মিডিয়া কোয়েরি --- */
+        @media (min-width: 992px) {
+            .main-layout {
+                flex-direction: row; /* পাশাপাশি দেখানো হবে */
+                align-items: flex-start;
+            }
+            .main-content {
+                flex: 3; /* ৭৫% জায়গা নেবে */
+            }
+            .sidebar-content {
+                flex: 1; /* ২৫% জায়গা নেবে */
+                position: sticky; /* স্ক্রল করার সময় সাইডবার স্থির থাকবে */
+                top: 20px;
+            }
+        }
+
+
+        .level {
+            background-color: #e6fffa;
+            border: 2px solid var(--secondary-color);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .level h2 { color: var(--text-dark); border-bottom: 2px dashed var(--locked-border); padding-bottom: 10px; margin-top: 0; }
+
+        /* --- পুরোনো স্টাইল (প্রয়োজনীয় পরিবর্তনসহ) --- */
+        .concept { background-color: var(--white-bg); padding: 15px; border-radius: 8px; border-left: 5px solid var(--secondary-color); text-align: left; margin: 20px 0; }
+        .code-block { background-color: var(--text-dark); color: #f7fafc; padding: 15px; border-radius: 5px; text-align: left; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; }
+        .task { margin-top: 25px; padding: 15px; background-color: #fefcbf; border: 2px solid #f6e05e; border-radius: 8px; }
+        input[type="text"], textarea { padding: 10px; border: 2px solid #cbd5e0; border-radius: 5px; font-family: 'Tiro Bangla', serif; font-size: 1em; width: 100%; box-sizing: border-box; }
+        button { background-color: var(--secondary-color); color: white; border: none; padding: 12px 25px; border-radius: 25px; font-family: 'Tiro Bangla', serif; font-size: 1.1em; cursor: pointer; margin-top: 15px; transition: background-color 0.3s ease; }
+        button:hover { background-color: var(--primary-color); }
+        button:disabled { background-color: var(--disabled-bg); cursor: not-allowed; }
+        .feedback { margin-top: 15px; font-size: 1.2em; font-weight: bold; min-height: 25px; }
+        .feedback.correct { color: #38a169; }
+        .feedback.incorrect { color: #e53e3e; }
+        .hint-box { margin-top: 20px; padding: 10px; background-color: #f0fff4; border: 1px dashed #9ae6b4; border-radius: 5px; cursor: pointer; }
+        .hint-box .hint-text { display: none; margin-top: 8px; color: #2f855a; text-align: left; }
+        
+        /* নতুন: লেভেল নেভিগেশন বাটন */
+        .level-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--locked-border);
+        }
+
+        /* --- সেটিংস আইকন ও পপ-আপ এর স্টাইল --- */
+        #settings-icon { position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000; }
+        #level-editor-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 999; display: none; justify-content: center; align-items: center; overflow-y: auto; }
+        .modal-content { background-color: var(--white-bg); padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { margin-top: 0; color: var(--primary-color); }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group small { color: #718096; }
+        .modal-buttons { text-align: right; }
+    </style>
+</head>
+<body>
+    
+    <div id="settings-icon" title="নতুন লেভেল যোগ করুন">⚙️</div>
+
+    <div class="container">
+        <h1>জাভাস্ক্রিপ্ট অ্যাডভেঞ্চার</h1>
+        <div id="level-tracker"></div>
+        
+        <div class="main-layout">
+            <div class="main-content" id="active-level-container">
+                </div>
+            
+            <div class="sidebar-content" id="locked-levels-sidebar">
+                </div>
+        </div>
+
+        <div class="level-navigation">
+            <button id="prev-level-btn">পূর্ববর্তী লেভেল</button>
+            <button id="next-level-btn">পরবর্তী লেভেল</button>
+        </div>
+    </div>
+
+    <div id="level-editor-modal">
+        <div class="modal-content">
+            <h2>নতুন লেভেল যোগ করুন</h2>
+            <div class="form-group"> <label for="new-level-title">লেভেলের টাইটেল</label> <input type="text" id="new-level-title" placeholder="যেমন: লেভেল ৬: অ্যারে মেথড"> </div>
+            <div class="form-group"> <label for="new-level-story">গল্প/ধারণা</label> <textarea id="new-level-story"></textarea> </div>
+            <div class="form-group"> <label for="new-level-challenge">চ্যালেঞ্জ</label> <textarea id="new-level-challenge"></textarea> </div>
+            <div class="form-group"> <label for="new-level-snippet">কোড স্নিপেট</label> <input type="text" id="new-level-snippet" placeholder="var data = {{input}};"> <small>ইনপুট বক্সের জায়গায় `{{input}}` ব্যবহার করুন।</small> </div>
+            <div class="form-group"> <label for="new-level-hint">হিন্ট</label> <textarea id="new-level-hint"></textarea> </div>
+            <div class="form-group"> <label for="new-level-answer">সঠিক উত্তর</label> <input type="text" id="new-level-answer"> </div>
+            <div class="modal-buttons"> <button type="button" id="close-modal-btn">বন্ধ করুন</button> <button type="button" id="save-level-btn">সেভ করুন</button> </div>
+        </div>
+    </div>
+
+    <script>
+    const defaultLevels = [
+        { title: "লেভেল ১: ভ্যারিয়েবল (Variable)", story: "<p>প্রোগ্রামিং-এ <strong>ভ্যারিয়েবল (Variable)</strong> হলো একটি কন্টেইনার, যার মধ্যে আমরা ডেটা বা তথ্য জমা রাখি।</p>", challenge: "নিচের `fruitBox` নামের বাক্সে 'আম' রাখতে হলে খালি জায়গায় কী লিখতে হবে?", codeSnippet: 'var fruitBox = "{{input}}";', hint: "যেকোনো লেখাকে কোটেশন (' ') এর ভেতরে রাখতে হয়।", answer: "আম" },
+        { title: "লেভেল ২: সংখ্যা (Number)", story: "<p>বাক্সে আমরা সংখ্যাও রাখতে পারি। সংখ্যা রাখার জন্য কোটেশন (' ') দিতে হয় না।</p>", challenge: "তোমার কাছে <strong>10</strong> টি চকলেট আছে। `chocolates` বাক্সে সেই সংখ্যাটি রাখো।", codeSnippet: "var chocolates = {{input}};", hint: "যেহেতু আমরা সংখ্যা রাখছি, কোটেশন (' ') ব্যবহার করা যাবে না।", answer: "10" },
+        { title: "লেভেল ৩: লেখা (String)", story: "<p>যেকোনো লেখাকে প্রোগ্রামিং এর ভাষায় <strong>স্ট্রিং (String)</strong> বলা হয়।</p>", challenge: "`countryName` ভ্যারিয়েবলে 'বাংলাদেশ' লেখাটি স্টোর করো।", codeSnippet: 'var countryName = "{{input}}";', hint: "যেকোনো লেখাকে স্ট্রিং হিসেবে রাখতে হলে সেটিকে কোটেশন (' ') এর ভেতরে রাখতে হয়।", answer: "বাংলাদেশ" },
+        { title: "লেভেল ৪: অপারেটর (+)", story: "<p>দুটি সংখ্যা যোগ করার কাজটি `+` চিহ্ন (অপারেটর) দিয়ে করা হয়।</p>", challenge: "`apples` ও `oranges` এর যোগফল রাখতে খালি জায়গায় কোন চিহ্নটি বসবে?", codeSnippet: "var apples = 5;<br>var oranges = 3;<br>var totalFruits = apples {{input}} oranges;", hint: "দুটি সংখ্যাকে যোগ করার জন্য `+` (প্লাস) চিহ্ন ব্যবহার করা হয়।", answer: "+" },
+        { title: "লেভেল ৫: অ্যারে (Array)", story: "<p>একটি মাত্র ভ্যারিয়েবলে অনেকগুলো জিনিস রাখতে হলে <strong>অ্যারে (Array)</strong> ব্যবহার করা হয়।</p>", challenge: "`fruits` অ্যারেতে 'লিচু' যোগ করতে খালি জায়গায় কী লিখতে হবে?", codeSnippet: "var fruits = ['আম', 'জাম', {{input}}];", hint: "অ্যারের প্রতিটি আইটেমকে কমা (,) দিয়ে আলাদা করা হয়।", answer: "'লিচু'" }
+    ];
+
+    let levelsData = [];
+    let progress = 1; // ব্যবহারকারী সর্বোচ্চ কত লেভেল পর্যন্ত আনলক করেছে
+    let activeLevelIndex = 0; // বর্তমানে কোন লেভেলটি দেখানো হচ্ছে
+
+    const activeContainer = document.getElementById('active-level-container');
+    const sidebarContainer = document.getElementById('locked-levels-sidebar');
+    const modal = document.getElementById('level-editor-modal');
+    
+    function loadData() {
+        const savedData = localStorage.getItem('jsGameLevels');
+        const savedProgress = localStorage.getItem('jsGameProgress');
+        
+        levelsData = savedData ? JSON.parse(savedData) : [...defaultLevels];
+        progress = savedProgress ? parseInt(savedProgress) : 1;
+        
+        // کاربرকারীকে তার শেষ আনলক করা লেভেলে নিয়ে যাও
+        activeLevelIndex = progress - 1; 
+    }
+
+    function saveData() {
+        localStorage.setItem('jsGameLevels', JSON.stringify(levelsData));
+        localStorage.setItem('jsGameProgress', progress);
+    }
+    
+    function renderUI() {
+        renderActiveLevel();
+        renderSidebar();
+        updateLevelTracker();
+        updateNavigationButtons();
+    }
+
+    function renderActiveLevel() {
+        activeContainer.innerHTML = '';
+        const levelData = levelsData[activeLevelIndex];
+        
+        const levelWrapper = document.createElement('div');
+        levelWrapper.className = 'level';
+        levelWrapper.id = `level-div-${activeLevelIndex}`;
+        
+        const inputHTML = `<input type="text" id="level-input-${activeLevelIndex}" placeholder="উত্তর দিন">`;
+        const finalCodeSnippet = levelData.codeSnippet.replace('{{input}}', inputHTML);
+
+        levelWrapper.innerHTML = `
+            <h2>${levelData.title}</h2>
+            <div class="content">
+                <div class="concept">${levelData.story}</div>
+                <div class="task">
+                    <h3>তোমার চ্যালেঞ্জ!</h3>
+                    <p>${levelData.challenge}</p>
+                    <div class="code-block">${finalCodeSnippet}</div>
+                    <button onclick="checkAnswer(${activeLevelIndex})">উত্তর যাচাই করো</button>
+                    <div class="feedback" id="feedback-${activeLevelIndex}"></div>
+                    <div class="hint-box" onclick="toggleHint(this)">
+                        <span>💡 সাহায্য লাগবে? (ক্লিক করে দেখাও/লুকাও)</span>
+                        <div class="hint-text">${levelData.hint}</div>
+                    </div>
+                </div>
+            </div>`;
+        activeContainer.appendChild(levelWrapper);
+    }
+
+    function renderSidebar() {
+        sidebarContainer.innerHTML = '<h3>বন্ধ থাকা লেভেলসমূহ</h3><div class="locked-levels-list" id="locked-list"></div>';
+        const lockedList = document.getElementById('locked-list');
+        lockedList.innerHTML = ''; // পুরোনো তালিকা মুছে ফেলো
+        
+        levelsData.forEach((levelData, index) => {
+            if (index >= progress) { // যে লেভেলগুলো এখনো আনলক হয়নি
+                const lockedItem = document.createElement('div');
+                lockedItem.className = 'locked-list-item';
+                lockedItem.innerHTML = `🔒 ${levelData.title}`;
+                lockedList.appendChild(lockedItem);
+            }
+        });
+
+        if (lockedList.innerHTML === '') {
+            lockedList.innerHTML = '<p>সবগুলো লেভেল আনলক করা হয়েছে!</p>';
+        }
+    }
+
+    function toggleHint(hintBoxElement) {
+        const hintText = hintBoxElement.querySelector('.hint-text');
+        if (hintText) {
+            hintText.style.display = (hintText.style.display === 'block') ? 'none' : 'block';
+        }
+    }
+
+    function updateLevelTracker() {
+        const trackerElement = document.getElementById('level-tracker');
+        if (trackerElement) {
+            trackerElement.textContent = `লেভেল: ${activeLevelIndex + 1} / ${levelsData.length}`;
+        }
+    }
+
+    function updateNavigationButtons() {
+        const prevBtn = document.getElementById('prev-level-btn');
+        const nextBtn = document.getElementById('next-level-btn');
+        
+        prevBtn.disabled = activeLevelIndex === 0;
+        // পরবর্তী লেভেলটি আনলক করা থাকলেই next বাটন সক্রিয় হবে
+        nextBtn.disabled = activeLevelIndex >= progress - 1 || activeLevelIndex >= levelsData.length - 1;
+    }
+
+    function checkAnswer(levelIndex) {
+        // নিশ্চিত করো যে উত্তর শুধুমাত্র বর্তমান সক্রিয় লেভেলের জন্যই চেক করা হচ্ছে
+        if (levelIndex !== activeLevelIndex) return;
+
+        const userAnswer = document.getElementById(`level-input-${levelIndex}`).value.trim();
+        const correctAnswer = levelsData[levelIndex].answer;
+        const feedbackElement = document.getElementById(`feedback-${levelIndex}`);
+
+        if (userAnswer === correctAnswer) {
+            feedbackElement.textContent = 'দারুণ! উত্তরটি সঠিক।';
+            feedbackElement.className = 'feedback correct';
+            
+            // ইনপুট এবং বাটন ডিজেবল করে দাও
+            document.getElementById(`level-input-${levelIndex}`).disabled = true;
+            document.querySelector(`#level-div-${levelIndex} .task button`).disabled = true;
+
+            // যদি বর্তমান লেভেলটি শেষ আনলক করা লেভেল হয়, তবে পরবর্তী লেভেল আনলক করো
+            if (levelIndex + 1 === progress && progress < levelsData.length) {
+                progress++;
+                saveData();
+                renderSidebar(); // নতুন লেভেল আনলক হওয়ায় সাইডবার আপডেট করো
+            }
+            
+            updateNavigationButtons(); // নেভিগেশন বাটন আপডেট করো
+
+        } else {
+            feedbackElement.textContent = 'উহু, আবার চেষ্টা করো।';
+            feedbackElement.className = 'feedback incorrect';
+        }
+    }
+    
+    function goToLevel(direction) {
+        if (direction === 'next' && activeLevelIndex < progress - 1) {
+            activeLevelIndex++;
+        } else if (direction === 'prev' && activeLevelIndex > 0) {
+            activeLevelIndex--;
+        }
+        renderUI();
+    }
+
+    function saveNewLevel() {
+        const title = document.getElementById('new-level-title').value.trim();
+        const answer = document.getElementById('new-level-answer').value.trim();
+
+        if (!title || !answer) {
+            alert("লেভেলের টাইটেল এবং সঠিক উত্তর অবশ্যই দিতে হবে।");
+            return;
+        }
+
+        levelsData.push({
+            title: title,
+            story: document.getElementById('new-level-story').value,
+            challenge: document.getElementById('new-level-challenge').value,
+            codeSnippet: document.getElementById('new-level-snippet').value || 'var data = "{{input}}";',
+            hint: document.getElementById('new-level-hint').value,
+            answer: answer
+        });
+        
+        saveData();
+        renderUI(); // UI আপডেট করো
+        modal.style.display = 'none';
+        alert('নতুন লেভেল সফলভাবে যোগ করা হয়েছে!');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+        renderUI();
+        
+        document.getElementById('settings-icon').addEventListener('click', () => { modal.style.display = 'flex'; });
+        document.getElementById('close-modal-btn').addEventListener('click', () => { modal.style.display = 'none'; });
+        document.getElementById('save-level-btn').addEventListener('click', saveNewLevel);
+
+        // নেভিগেশন বাটনগুলোর জন্য ইভেন্ট লিসেনার
+        document.getElementById('next-level-btn').addEventListener('click', () => goToLevel('next'));
+        document.getElementById('prev-level-btn').addEventListener('click', () => goToLevel('prev'));
+    });
+    </script>
+</body>
+</html>
